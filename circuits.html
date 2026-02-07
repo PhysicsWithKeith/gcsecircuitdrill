@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics with Keith - Circuit Rules Drill</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        :root { --keith-rounded: 28px; --keith-bg: #000000; }
+        body { background-color: var(--keith-bg); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; padding: 0; }
+        .keith-card { border-radius: var(--keith-rounded); background: #111; border: 1px solid #333; }
+        .diagram-container { background: white; border-radius: var(--keith-rounded); min-height: 260px; display: flex; justify-content: center; align-items: center; position: relative; }
+        .btn-keith { border-radius: 12px; transition: all 0.2s; text-transform: uppercase; font-weight: bold; }
+        .btn-keith:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        .btn-keith:not(:disabled):active { transform: scale(0.96); }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="p-2 md:p-6">
+
+<div class="max-w-4xl mx-auto space-y-3">
+    <div class="flex justify-between items-center gap-2">
+        <h1 class="text-xl md:text-2xl font-black italic tracking-tighter uppercase">Physics <span class="text-blue-500">With Keith</span></h1>
+        <div class="flex gap-2 text-center scale-90 md:scale-100 origin-right items-center">
+            <div class="keith-card p-2 min-w-[70px] md:min-w-[90px]">
+                <div class="text-[8px] text-gray-400 uppercase tracking-widest">Score</div>
+                <div id="score-display" class="text-lg font-bold text-blue-400">0</div>
+            </div>
+            <div class="keith-card p-2 min-w-[70px] md:min-w-[90px]">
+                <div class="text-[8px] text-gray-400 uppercase tracking-widest">Acc</div>
+                <div id="accuracy-display" class="text-lg font-bold">0/0</div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="keith-card px-3 py-2 min-w-[70px] md:min-w-[90px] border-blue-500/50 flex items-center justify-center">
+                    <div id="timer-text" class="text-lg font-bold">05:00</div>
+                </div>
+                <button onclick="endGame()" class="text-[9px] text-red-500 uppercase font-bold tracking-tighter hover:text-red-400">End Early</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="keith-card p-4 md:p-5 space-y-3">
+        <div class="flex justify-between items-center">
+            <h2 id="question-text" class="text-lg font-semibold">Press Start to Begin...</h2>
+            <div id="multiplier-badge" class="text-[10px] bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full border border-blue-700 hidden">HARD (1.5x)</div>
+        </div>
+        
+        <div class="diagram-container shadow-inner">
+            <canvas id="circuitCanvas" width="650" height="260" class="max-w-full h-auto"></canvas>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div class="md:col-span-2 flex gap-2">
+                <div class="flex-1">
+                    <input type="number" id="answer-input" step="any" placeholder="Value..." 
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg">
+                </div>
+                <div class="w-24 md:w-32">
+                    <select id="unit-select" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white outline-none text-lg">
+                        <option value="">Unit</option>
+                        <option value="V">V</option>
+                        <option value="A">A</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button id="check-btn" onclick="checkAnswer()" disabled class="flex-1 btn-keith bg-blue-600 hover:bg-blue-500 text-white py-3">Check</button>
+                <button id="next-btn" onclick="nextQuestion(true)" class="flex-1 btn-keith bg-gray-700 hover:bg-gray-600 text-white py-3">Next</button>
+            </div>
+        </div>
+
+        <div id="feedback-area" class="min-h-[85px] bg-black/20 rounded-xl p-3 border border-gray-800 relative">
+            <div id="status-msg" class="font-bold text-md mb-1"></div>
+            <div id="hint-1" class="text-blue-300 hidden italic text-sm mb-1"></div>
+            <div id="hint-2" class="text-yellow-200 hidden font-mono text-xs bg-black/40 p-2 rounded border border-yellow-900/20"></div>
+            <button id="manual-hint-btn" onclick="giveHint()" class="absolute bottom-3 right-3 text-[10px] text-blue-500 underline uppercase tracking-tighter hover:text-blue-400">Get Help (-50 pts)</button>
+        </div>
+    </div>
+</div>
+
+<div id="start-screen" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+    <div class="keith-card p-8 max-w-lg w-full space-y-6 border-blue-500 border">
+        <h2 class="text-3xl font-black italic tracking-tighter uppercase">Circuit Rules <span class="text-blue-500">Drill</span></h2>
+        <div class="text-sm text-gray-300 space-y-4">
+            <p>Welcome, Physicist. Your task is to calculate <span class="text-blue-400">Current (A)</span> or <span class="text-blue-400">Potential Difference (V)</span> for specific components.</p>
+            <ul class="list-disc list-inside space-y-2 text-gray-400">
+                <li>Use <span class="text-white">V = I R</span> and circuit rules to solve.</li>
+                <li>Give answers to at least <span class="text-white">2 significant figures</span>.</li>
+                <li>Complex circuits grant a <span class="text-blue-400">1.5x Multiplier</span>.</li>
+                <li>Manual hints cost <span class="text-red-400">50 points</span>.</li>
+            </ul>
+        </div>
+        <button onclick="startGame()" class="w-full btn-keith bg-blue-600 py-4 text-xl hover:bg-blue-500">Initialize Circuit</button>
+    </div>
+</div>
+
+<div id="results-screen" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden">
+    <div class="keith-card p-8 max-w-md w-full text-center space-y-6 border-blue-600 border-2">
+        <h2 class="text-4xl font-black italic">GAME OVER</h2>
+        <div id="final-stats" class="text-lg"></div>
+        <button onclick="location.reload()" class="w-full btn-keith bg-blue-600 py-4 text-xl">Play Again</button>
+        <button onclick="shareScore()" class="w-full text-blue-400 text-sm underline">Share to X</button>
+    </div>
+</div>
+
+<script>
+let state = {
+    timeLeft: 300, score: 0, attempted: 0, correctFirstTime: 0,
+    currentCircuit: null, wrongAttempts: 0, timer: null, solved: false, hintsGiven: 0, active: false
+};
+
+// --- Circuit Builder ---
+class Component { constructor(val, id) { this.value = val; this.id = id; this.rEq = val; this.v = 0; this.i = 0; } }
+class Group {
+    constructor(type, children) {
+        this.type = type; this.children = children;
+        if (type === 'series') this.rEq = children.reduce((a, b) => a + b.rEq, 0);
+        else this.rEq = 1 / children.reduce((a, b) => a + (1/b.rEq), 0);
+    }
+}
+
+function generateCircuit() {
+    const count = Math.floor(Math.random() * 5) + 2; 
+    const batteryV = (Math.floor(Math.random() * 12) + 1) * 2;
+    const res = Array.from({length: count}, (_, i) => new Component([2, 4, 5, 10, 12, 15, 20, 25][Math.floor(Math.random()*8)], i));
+    
+    let root;
+    let complexity = 1.0;
+    if (count <= 3) {
+        root = new Group(Math.random() > 0.5 ? 'series' : 'parallel', res);
+    } else {
+        complexity = 1.5;
+        const split = Math.floor(count/2);
+        const g1 = new Group(Math.random() > 0.5 ? 'series' : 'parallel', res.slice(0, split));
+        const g2 = new Group(Math.random() > 0.5 ? 'series' : 'parallel', res.slice(split));
+        root = new Group(Math.random() > 0.5 ? 'series' : 'parallel', [g1, g2]);
+    }
+
+    const solve = (n, ii, iv) => {
+        if (n instanceof Component) { n.i = ii; n.v = iv; return; }
+        if (n.type === 'series') n.children.forEach(c => { const cv = ii * c.rEq; solve(c, ii, cv); });
+        else n.children.forEach(c => { const ci = iv / c.rEq; solve(c, ci, iv); });
+    };
+    solve(root, batteryV / root.rEq, batteryV);
+
+    const target = res[Math.floor(Math.random() * res.length)];
+    const askV = Math.random() > 0.5;
+    return { batteryV, root, target, askV, answer: askV ? target.v : target.i, unit: askV ? 'V' : 'A', multiplier: complexity };
+}
+
+// --- Drawing Engine ---
+function drawCircuit(ctx, c) {
+    if(!c) return;
+    ctx.clearRect(0, 0, 650, 260);
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.font = '700 15px Inter'; ctx.fillStyle = '#000';
+    
+    const bx = 325, by = 35;
+    ctx.beginPath();
+    ctx.moveTo(bx-50, by); ctx.lineTo(60, by); ctx.lineTo(60, 155); 
+    ctx.moveTo(bx+50, by); ctx.lineTo(590, by); ctx.lineTo(590, 155);
+    ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(bx-50, by); ctx.lineTo(bx-15, by); ctx.moveTo(bx+15, by); ctx.lineTo(bx+50, by); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bx-15, by-15); ctx.lineTo(bx-15, by+15);
+    ctx.moveTo(bx-8, by-8); ctx.lineTo(bx-8, by+8);
+    ctx.setLineDash([4, 4]); ctx.moveTo(bx-8, by); ctx.lineTo(bx+8, by); ctx.stroke(); ctx.setLineDash([]);
+    ctx.moveTo(bx+8, by-15); ctx.lineTo(bx+8, by+15);
+    ctx.moveTo(bx+15, by-8); ctx.lineTo(bx+15, by+8);
+    ctx.stroke();
+    ctx.textAlign = 'center'; ctx.fillText(`${c.batteryV}V`, bx, by - 20);
+
+    drawNode(ctx, c.root, 60, 80, 530, 150, c.target);
+}
+
+function drawNode(ctx, node, x, y, w, h, target) {
+    if (node instanceof Component) {
+        const isT = node === target;
+        ctx.fillStyle = isT ? '#EFF6FF' : '#FFF';
+        ctx.strokeStyle = isT ? '#3B82F6' : '#000';
+        ctx.lineWidth = isT ? 3 : 2;
+        ctx.fillRect(x + w/2 - 35, y + h/2 - 10, 70, 20);
+        ctx.strokeRect(x + w/2 - 35, y + h/2 - 10, 70, 20);
+        ctx.fillStyle = '#000'; ctx.textAlign = 'center';
+        ctx.fillText(`${node.value}Ω`, x + w/2, y + h/2 + 6);
+        ctx.beginPath(); ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+        ctx.moveTo(x, y + h/2); ctx.lineTo(x + w/2 - 35, y + h/2);
+        ctx.moveTo(x + w/2 + 35, y + h/2); ctx.lineTo(x + w, y + h/2); ctx.stroke();
+    } else if (node.type === 'series') {
+        const sw = w / node.children.length;
+        node.children.forEach((c, i) => drawNode(ctx, c, x + i * sw, y, sw, h, target));
+    } else {
+        const sh = h / node.children.length;
+        ctx.beginPath(); ctx.strokeStyle = '#222';
+        ctx.moveTo(x, y + sh/2); ctx.lineTo(x, y + h - sh/2);
+        ctx.moveTo(x + w, y + sh/2); ctx.lineTo(x + w, y + h - sh/2); ctx.stroke();
+        node.children.forEach((c, i) => drawNode(ctx, c, x, y + i * sh, w, sh, target));
+    }
+}
+
+// --- Logic ---
+function startGame() {
+    state.active = true;
+    document.getElementById('start-screen').classList.add('hidden');
+    startTimer();
+    nextQuestion();
+}
+
+function startTimer() {
+    state.timer = setInterval(() => {
+        state.timeLeft--; 
+        updateUI();
+        if (state.timeLeft <= 0) endGame();
+    }, 1000);
+}
+
+function endGame() {
+    clearInterval(state.timer);
+    state.active = false;
+    document.getElementById('results-screen').classList.remove('hidden');
+    document.getElementById('final-stats').innerHTML = `<p class="text-6xl font-black text-blue-500 mb-4">${state.score}</p><p class="text-gray-400">Accuracy: ${state.correctFirstTime}/${state.attempted}</p>`;
+}
+
+function nextQuestion(wasSkipped = false) {
+    if(!state.active) return;
+    if(wasSkipped && state.currentCircuit && !state.solved) state.attempted++; 
+    state.currentCircuit = generateCircuit();
+    state.wrongAttempts = 0; state.solved = false; state.hintsGiven = 0;
+    
+    document.getElementById('answer-input').value = '';
+    document.getElementById('unit-select').value = '';
+    document.getElementById('status-msg').innerText = '';
+    document.getElementById('hint-1').classList.add('hidden');
+    document.getElementById('hint-2').classList.add('hidden');
+    document.getElementById('manual-hint-btn').classList.remove('hidden');
+    
+    const c = state.currentCircuit;
+    const mode = c.askV ? "potential difference" : "current";
+    const prep = c.askV ? "across" : "through";
+    document.getElementById('question-text').innerHTML = `Calculate the <span class="text-blue-500 font-bold">${mode}</span> ${prep} the highlighted component.`;
+    
+    const badge = document.getElementById('multiplier-badge');
+    if (c.multiplier > 1) badge.classList.remove('hidden'); else badge.classList.add('hidden');
+
+    drawCircuit(document.getElementById('circuitCanvas').getContext('2d'), c);
+    updateUI();
+}
+
+function checkAnswer() {
+    if (state.solved) return;
+    const valStr = document.getElementById('answer-input').value;
+    const unit = document.getElementById('unit-select').value;
+    const val = parseFloat(valStr);
+    const correct = state.currentCircuit.answer;
+    
+    const sigFigs = valStr.replace(/[.-]/g, '').replace(/^0+/, '').length;
+    const isClose = Math.abs(val - correct) / correct < 0.012;
+
+    if (isClose && unit === state.currentCircuit.unit) {
+        if (sigFigs < 2) { showStatus("Correct value, but use at least 2 significant figures.", "text-yellow-500"); return; }
+        handleSuccess();
+    } else {
+        state.wrongAttempts++;
+        if (unit !== state.currentCircuit.unit) showStatus(`Wrong unit! Check the property.`, "text-red-400");
+        else if (sigFigs < 2) showStatus("Use 2 or more significant figures.", "text-yellow-500");
+        else showStatus("Incorrect calculation. Try again!", "text-red-500");
+        
+        if (state.wrongAttempts === 2) showHint(1);
+        if (state.wrongAttempts === 3) showHint(2);
+        if (state.wrongAttempts >= 4) {
+            state.solved = true;
+            state.attempted++;
+            showStatus(`Answer: ${correct.toFixed(2)}${state.currentCircuit.unit}`, "text-white");
+            document.getElementById('manual-hint-btn').classList.add('hidden');
+        }
+    }
+    updateUI();
+}
+
+function handleSuccess() {
+    state.solved = true; state.attempted++;
+    const base = 1000 - (state.wrongAttempts * 200);
+    const earned = Math.max(100, Math.floor(base * state.currentCircuit.multiplier));
+    state.score += earned;
+    if (state.wrongAttempts === 0) state.correctFirstTime++;
+    showStatus(`CORRECT! +${earned} pts`, "text-green-500");
+    setTimeout(() => nextQuestion(), 1500);
+}
+
+function showHint(level) {
+    state.hintsGiven = level;
+    if (level === 1) {
+        const h = document.getElementById('hint-1'); h.classList.remove('hidden');
+        h.innerText = state.currentCircuit.askV ? "Hint: PD is shared in series, but equal across branches in parallel." : "Hint: Current is same in series, but splits in parallel.";
+    } else {
+        const h = document.getElementById('hint-2'); h.classList.remove('hidden');
+        const c = state.currentCircuit;
+        h.innerHTML = `EXAMINER VIEW:<br>1. Total R = ${c.root.rEq.toFixed(1)}Ω<br>2. Total I = ${c.batteryV}V / ${c.root.rEq.toFixed(1)}Ω = ${(c.batteryV/c.root.rEq).toFixed(2)}A<br>3. Focus on target's branch rules.`;
+        document.getElementById('manual-hint-btn').classList.add('hidden');
+    }
+}
+
+function giveHint() { 
+    state.score = Math.max(0, state.score - 50); 
+    state.wrongAttempts = Math.max(state.wrongAttempts, state.hintsGiven + 1);
+    showHint(state.wrongAttempts >= 2 ? 2 : 1); 
+    updateUI(); 
+}
+
+function showStatus(m, c) { const e = document.getElementById('status-msg'); e.innerText = m; e.className = `font-bold ${c}`; }
+
+function updateUI() {
+    const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
+    document.getElementById('timer-text').innerText = `${m}:${s.toString().padStart(2, '0')}`;
+    document.getElementById('score-display').innerText = state.score;
+    document.getElementById('accuracy-display').innerText = `${state.correctFirstTime}/${state.attempted}`;
+    const hasInput = document.getElementById('answer-input').value !== '' && document.getElementById('unit-select').value !== '';
+    document.getElementById('check-btn').disabled = !hasInput || state.solved;
+}
+
+function shareScore() {
+    const text = `I just scored ${state.score} on the Physics With Keith Circuit Rules Drill! ⚡️ Accuracy: ${state.correctFirstTime}/${state.attempted}. Can you beat me? Go to www.physicswithkeith.com to find out`;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !document.getElementById('check-btn').disabled) checkAnswer(); });
+document.getElementById('answer-input').addEventListener('input', updateUI);
+document.getElementById('unit-select').addEventListener('change', updateUI);
+</script>
+</body>
+</html>
