@@ -4,113 +4,208 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Physics with Keith - Circuit Rules Drill</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        :root { --keith-rounded: 28px; --keith-bg: #000000; }
-        body { background-color: var(--keith-bg); color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; padding: 0; }
-        .keith-card { border-radius: var(--keith-rounded); background: #111; border: 1px solid #333; }
-        .diagram-container { background: white; border-radius: var(--keith-rounded); min-height: 260px; display: flex; justify-content: center; align-items: center; position: relative; }
-        .btn-keith { border-radius: 12px; transition: all 0.2s; text-transform: uppercase; font-weight: bold; }
+        /* Base Styles & Reset */
+        :root { 
+            --keith-rounded: 28px; 
+            --keith-bg: #000000; 
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+            --blue-400: #60a5fa;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+        }
+        
+        body { 
+            background-color: var(--keith-bg); 
+            color: white; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            overflow-x: hidden; 
+            margin: 0; 
+            padding: 16px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Layout Utilities */
+        .max-w-4xl { max-width: 56rem; width: 100%; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .space-y-3 > * + * { margin-top: 0.75rem; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .items-center { align-items: center; }
+        .grid { display: grid; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .p-4 { padding: 1rem; }
+        .p-8 { padding: 2rem; }
+        .hidden { display: none !important; }
+
+        /* Component Styles */
+        .keith-card { 
+            border-radius: var(--keith-rounded); 
+            background: #111; 
+            border: 1px solid #333; 
+            padding: 1.25rem;
+        }
+        
+        .diagram-container { 
+            background: white; 
+            border-radius: var(--keith-rounded); 
+            min-height: 260px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative; 
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+            margin: 1rem 0;
+        }
+
+        .btn-keith { 
+            border-radius: 12px; 
+            transition: all 0.2s; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+            cursor: pointer;
+            border: none;
+            color: white;
+            padding: 0.75rem 1rem;
+        }
+        
         .btn-keith:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
         .btn-keith:not(:disabled):active { transform: scale(0.96); }
-        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .bg-blue-600 { background-color: var(--blue-600); }
+        .bg-blue-600:hover { background-color: var(--blue-500); }
+        .bg-gray-700 { background-color: var(--gray-700); }
+        .bg-gray-700:hover { background-color: #4b5563; }
+
+        input, select {
+            background-color: var(--gray-800);
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: white;
+            font-size: 1.125rem;
+            outline: none;
+        }
+
+        /* Full Screen Overlay Styling */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 768px) {
+            .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .md\:col-span-2 { grid-column: span 2 / span 2; }
+        }
+
+        canvas { max-width: 100%; height: auto; }
     </style>
 </head>
-<body class="p-2 md:p-6">
+<body>
 
 <div class="max-w-4xl mx-auto space-y-3">
     <div class="flex justify-between items-center gap-2">
-        <h1 class="text-xl md:text-2xl font-black italic tracking-tighter uppercase">Physics <span class="text-blue-500">With Keith</span></h1>
-        <div class="flex gap-2 text-center scale-90 md:scale-100 origin-right items-center">
-            <div class="keith-card p-2 min-w-[70px] md:min-w-[90px]">
-                <div class="text-[8px] text-gray-400 uppercase tracking-widest">Score</div>
-                <div id="score-display" class="text-lg font-bold text-blue-400">0</div>
+        <h1 style="font-size: 1.25rem; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.05em;">Physics <span class="text-blue-500">With Keith</span></h1>
+        <div class="flex gap-2 items-center">
+            <div class="keith-card" style="padding: 0.5rem; min-width: 70px; text-align: center;">
+                <div style="font-size: 8px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.1em;">Score</div>
+                <div id="score-display" style="font-size: 1.125rem; font-weight: bold; color: var(--blue-400);">0</div>
             </div>
-            <div class="keith-card p-2 min-w-[70px] md:min-w-[90px]">
-                <div class="text-[8px] text-gray-400 uppercase tracking-widest">Acc</div>
-                <div id="accuracy-display" class="text-lg font-bold">0/0</div>
+            <div class="keith-card" style="padding: 0.5rem; min-width: 70px; text-align: center;">
+                <div style="font-size: 8px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.1em;">Acc</div>
+                <div id="accuracy-display" style="font-size: 1.125rem; font-weight: bold;">0/0</div>
             </div>
-            <div class="flex flex-col gap-1">
-                <div class="keith-card px-3 py-2 min-w-[70px] md:min-w-[90px] border-blue-500/50 flex items-center justify-center">
-                    <div id="timer-text" class="text-lg font-bold">05:00</div>
+            <div class="flex" style="flex-direction: column; gap: 4px;">
+                <div class="keith-card" style="padding: 0.5rem 0.75rem; border-color: rgba(59, 130, 246, 0.5);">
+                    <div id="timer-text" style="font-size: 1.125rem; font-weight: bold;">05:00</div>
                 </div>
-                <button onclick="endGame()" class="text-[9px] text-red-500 uppercase font-bold tracking-tighter hover:text-red-400">End Early</button>
+                <button onclick="endGame()" style="background: none; border: none; font-size: 9px; color: #ef4444; font-weight: bold; cursor: pointer;">End Early</button>
             </div>
         </div>
     </div>
 
-    <div class="keith-card p-4 md:p-5 space-y-3">
+    <div class="keith-card space-y-3">
         <div class="flex justify-between items-center">
-            <h2 id="question-text" class="text-lg font-semibold">Press Start to Begin...</h2>
-            <div id="multiplier-badge" class="text-[10px] bg-blue-900/50 text-blue-300 px-2 py-1 rounded-full border border-blue-700 hidden">HARD (1.5x)</div>
+            <h2 id="question-text" style="font-size: 1.125rem; font-weight: 600;">Press Start to Begin...</h2>
+            <div id="multiplier-badge" class="hidden" style="font-size: 10px; background: rgba(30, 58, 138, 0.5); color: #93c5fd; padding: 2px 8px; border-radius: 9999px; border: 1px solid #1d4ed8;">HARD (1.5x)</div>
         </div>
         
-        <div class="diagram-container shadow-inner">
-            <canvas id="circuitCanvas" width="650" height="260" class="max-w-full h-auto"></canvas>
+        <div class="diagram-container">
+            <canvas id="circuitCanvas" width="650" height="260"></canvas>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+        <div class="grid md:grid-cols-3 gap-3">
             <div class="md:col-span-2 flex gap-2">
-                <div class="flex-1">
-                    <input type="number" id="answer-input" step="any" placeholder="Value..." 
-                        class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none text-lg">
-                </div>
-                <div class="w-24 md:w-32">
-                    <select id="unit-select" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white outline-none text-lg">
-                        <option value="">Unit</option>
-                        <option value="V">V</option>
-                        <option value="A">A</option>
-                    </select>
-                </div>
+                <input type="number" id="answer-input" step="any" placeholder="Value..." style="flex: 1;">
+                <select id="unit-select" style="width: 100px;">
+                    <option value="">Unit</option>
+                    <option value="V">V</option>
+                    <option value="A">A</option>
+                </select>
             </div>
             <div class="flex gap-2">
-                <button id="check-btn" onclick="checkAnswer()" disabled class="flex-1 btn-keith bg-blue-600 hover:bg-blue-500 text-white py-3">Check</button>
-                <button id="next-btn" onclick="nextQuestion(true)" class="flex-1 btn-keith bg-gray-700 hover:bg-gray-600 text-white py-3">Next</button>
+                <button id="check-btn" onclick="checkAnswer()" disabled class="btn-keith bg-blue-600" style="flex: 1;">Check</button>
+                <button id="next-btn" onclick="nextQuestion(true)" class="btn-keith bg-gray-700" style="flex: 1;">Next</button>
             </div>
         </div>
 
-        <div id="feedback-area" class="min-h-[85px] bg-black/20 rounded-xl p-3 border border-gray-800 relative">
-            <div id="status-msg" class="font-bold text-md mb-1"></div>
-            <div id="hint-1" class="text-blue-300 hidden italic text-sm mb-1"></div>
-            <div id="hint-2" class="text-yellow-200 hidden font-mono text-xs bg-black/40 p-2 rounded border border-yellow-900/20"></div>
-            <button id="manual-hint-btn" onclick="giveHint()" class="absolute bottom-3 right-3 text-[10px] text-blue-500 underline uppercase tracking-tighter hover:text-blue-400">Get Help (-50 pts)</button>
+        <div id="feedback-area" style="min-height: 85px; background: rgba(0,0,0,0.2); border-radius: 0.75rem; padding: 0.75rem; border: 1px solid #1f2937; position: relative;">
+            <div id="status-msg" style="font-weight: bold; margin-bottom: 4px;"></div>
+            <div id="hint-1" class="hidden" style="color: #93c5fd; font-style: italic; font-size: 0.875rem; margin-bottom: 4px;"></div>
+            <div id="hint-2" class="hidden" style="color: #fef08a; font-family: monospace; font-size: 0.75rem; background: rgba(0,0,0,0.4); padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(133, 77, 14, 0.2);"></div>
+            <button id="manual-hint-btn" onclick="giveHint()" style="position: absolute; bottom: 12px; right: 12px; background: none; border: none; font-size: 10px; color: var(--blue-500); text-decoration: underline; text-transform: uppercase; cursor: pointer;">Get Help (-50 pts)</button>
         </div>
     </div>
 </div>
 
-<div id="start-screen" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
-    <div class="keith-card p-8 max-w-lg w-full space-y-6 border-blue-500 border">
-        <h2 class="text-3xl font-black italic tracking-tighter uppercase">Circuit Rules <span class="text-blue-500">Drill</span></h2>
-        <div class="text-sm text-gray-300 space-y-4">
-            <p>Welcome, Physicist. Your task is to calculate <span class="text-blue-400">Current (A)</span> or <span class="text-blue-400">Potential Difference (V)</span> for specific components.</p>
-            <ul class="list-disc list-inside space-y-2 text-gray-400">
-                <li>Use <span class="text-white">V = I R</span> and circuit rules to solve.</li>
-                <li>Give answers to at least <span class="text-white">2 significant figures</span>.</li>
+<div id="start-screen" class="overlay">
+    <div class="keith-card p-8" style="max-width: 500px; width: 100%; border-color: var(--blue-500);">
+        <h2 style="font-size: 1.875rem; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.05em; margin-bottom: 1.5rem;">Circuit Rules <span class="text-blue-500">Drill</span></h2>
+        <div style="font-size: 0.875rem; color: #d1d5db; line-height: 1.5;">
+            <p>Welcome, Physicist. Your task is to calculate <span class="text-blue-400">Current (A)</span> or <span class="text-blue-400">Potential Difference (V)</span>.</p>
+            <ul style="margin-top: 1rem; padding-left: 1.25rem;">
+                <li>Use <b>V = I R</b> and circuit rules to solve.</li>
+                <li>Give answers to at least <b>2 significant figures</b>.</li>
                 <li>Complex circuits grant a <span class="text-blue-400">1.5x Multiplier</span>.</li>
-                <li>Manual hints cost <span class="text-red-400">50 points</span>.</li>
+                <li>Manual hints cost <span style="color: #f87171;">50 points</span>.</li>
             </ul>
         </div>
-        <button onclick="startGame()" class="w-full btn-keith bg-blue-600 py-4 text-xl hover:bg-blue-500">Initialize Circuit</button>
+        <button onclick="startGame()" class="btn-keith bg-blue-600" style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.25rem;">Initialize Circuit</button>
     </div>
 </div>
 
-<div id="results-screen" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden">
-    <div class="keith-card p-8 max-w-md w-full text-center space-y-6 border-blue-600 border-2">
-        <h2 class="text-4xl font-black italic">GAME OVER</h2>
-        <div id="final-stats" class="text-lg"></div>
-        <button onclick="location.reload()" class="w-full btn-keith bg-blue-600 py-4 text-xl">Play Again</button>
-        <button onclick="shareScore()" class="w-full text-blue-400 text-sm underline">Share to X</button>
+<div id="results-screen" class="overlay hidden">
+    <div class="keith-card p-8" style="max-width: 400px; width: 100%; text-align: center; border: 2px solid var(--blue-600);">
+        <h2 style="font-size: 2.25rem; font-weight: 900; font-style: italic;">GAME OVER</h2>
+        <div id="final-stats" style="margin: 1.5rem 0;"></div>
+        <button onclick="location.reload()" class="btn-keith bg-blue-600" style="width: 100%; padding: 1rem; font-size: 1.25rem; margin-bottom: 1rem;">Play Again</button>
+        <button onclick="shareScore()" style="background: none; border: none; color: var(--blue-400); text-decoration: underline; cursor: pointer;">Share to X</button>
     </div>
 </div>
 
 <script>
+/* JS Logic Remains Identical */
 let state = {
     timeLeft: 300, score: 0, attempted: 0, correctFirstTime: 0,
     currentCircuit: null, wrongAttempts: 0, timer: null, solved: false, hintsGiven: 0, active: false
 };
 
-// --- Circuit Builder ---
 class Component { constructor(val, id) { this.value = val; this.id = id; this.rEq = val; this.v = 0; this.i = 0; } }
 class Group {
     constructor(type, children) {
@@ -149,11 +244,10 @@ function generateCircuit() {
     return { batteryV, root, target, askV, answer: askV ? target.v : target.i, unit: askV ? 'V' : 'A', multiplier: complexity };
 }
 
-// --- Drawing Engine ---
 function drawCircuit(ctx, c) {
     if(!c) return;
     ctx.clearRect(0, 0, 650, 260);
-    ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.font = '700 15px Inter'; ctx.fillStyle = '#000';
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.font = '700 15px sans-serif'; ctx.fillStyle = '#000';
     
     const bx = 325, by = 35;
     ctx.beginPath();
@@ -199,7 +293,6 @@ function drawNode(ctx, node, x, y, w, h, target) {
     }
 }
 
-// --- Logic ---
 function startGame() {
     state.active = true;
     document.getElementById('start-screen').classList.add('hidden');
@@ -219,7 +312,7 @@ function endGame() {
     clearInterval(state.timer);
     state.active = false;
     document.getElementById('results-screen').classList.remove('hidden');
-    document.getElementById('final-stats').innerHTML = `<p class="text-6xl font-black text-blue-500 mb-4">${state.score}</p><p class="text-gray-400">Accuracy: ${state.correctFirstTime}/${state.attempted}</p>`;
+    document.getElementById('final-stats').innerHTML = `<p style="font-size: 3.75rem; font-weight: 900; color: var(--blue-500); margin-bottom: 1rem;">${state.score}</p><p style="color: #9ca3af;">Accuracy: ${state.correctFirstTime}/${state.attempted}</p>`;
 }
 
 function nextQuestion(wasSkipped = false) {
@@ -238,7 +331,7 @@ function nextQuestion(wasSkipped = false) {
     const c = state.currentCircuit;
     const mode = c.askV ? "potential difference" : "current";
     const prep = c.askV ? "across" : "through";
-    document.getElementById('question-text').innerHTML = `Calculate the <span class="text-blue-500 font-bold">${mode}</span> ${prep} the highlighted component.`;
+    document.getElementById('question-text').innerHTML = `Calculate the <span style="color: var(--blue-500); font-weight: bold;">${mode}</span> ${prep} the highlighted component.`;
     
     const badge = document.getElementById('multiplier-badge');
     if (c.multiplier > 1) badge.classList.remove('hidden'); else badge.classList.add('hidden');
@@ -258,20 +351,20 @@ function checkAnswer() {
     const isClose = Math.abs(val - correct) / correct < 0.012;
 
     if (isClose && unit === state.currentCircuit.unit) {
-        if (sigFigs < 2) { showStatus("Correct value, but use at least 2 significant figures.", "text-yellow-500"); return; }
+        if (sigFigs < 2) { showStatus("Correct value, but use at least 2 significant figures.", "#eab308"); return; }
         handleSuccess();
     } else {
         state.wrongAttempts++;
-        if (unit !== state.currentCircuit.unit) showStatus(`Wrong unit! Check the property.`, "text-red-400");
-        else if (sigFigs < 2) showStatus("Use 2 or more significant figures.", "text-yellow-500");
-        else showStatus("Incorrect calculation. Try again!", "text-red-500");
+        if (unit !== state.currentCircuit.unit) showStatus(`Wrong unit! Check the property.`, "#f87171");
+        else if (sigFigs < 2) showStatus("Use 2 or more significant figures.", "#eab308");
+        else showStatus("Incorrect calculation. Try again!", "#ef4444");
         
         if (state.wrongAttempts === 2) showHint(1);
         if (state.wrongAttempts === 3) showHint(2);
         if (state.wrongAttempts >= 4) {
             state.solved = true;
             state.attempted++;
-            showStatus(`Answer: ${correct.toFixed(2)}${state.currentCircuit.unit}`, "text-white");
+            showStatus(`Answer: ${correct.toFixed(2)}${state.currentCircuit.unit}`, "#fff");
             document.getElementById('manual-hint-btn').classList.add('hidden');
         }
     }
@@ -284,7 +377,7 @@ function handleSuccess() {
     const earned = Math.max(100, Math.floor(base * state.currentCircuit.multiplier));
     state.score += earned;
     if (state.wrongAttempts === 0) state.correctFirstTime++;
-    showStatus(`CORRECT! +${earned} pts`, "text-green-500");
+    showStatus(`CORRECT! +${earned} pts`, "#22c55e");
     setTimeout(() => nextQuestion(), 1500);
 }
 
@@ -308,7 +401,11 @@ function giveHint() {
     updateUI(); 
 }
 
-function showStatus(m, c) { const e = document.getElementById('status-msg'); e.innerText = m; e.className = `font-bold ${c}`; }
+function showStatus(m, color) { 
+    const e = document.getElementById('status-msg'); 
+    e.innerText = m; 
+    e.style.color = color; 
+}
 
 function updateUI() {
     const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
@@ -320,7 +417,7 @@ function updateUI() {
 }
 
 function shareScore() {
-    const text = `I just scored ${state.score} on the Physics With Keith Circuit Rules Drill! ⚡️ Accuracy: ${state.correctFirstTime}/${state.attempted}. Can you beat me? Go to www.physicswithkeith.com to find out`;
+    const text = `I just scored ${state.score} on the Physics With Keith Circuit Rules Drill! ⚡️ Accuracy: ${state.correctFirstTime}/${state.attempted}. Can you beat me? Go to www.physicswithkeith.com`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
 }
 
